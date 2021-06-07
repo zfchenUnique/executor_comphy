@@ -52,7 +52,7 @@ for ann_idx in pbar:
     question_scene = anns[file_idx]
     sim = Simulation(args, file_idx, use_event_ann=(args.use_event_ann != 0))
     if len(sim.objs)!=len(sim.get_visible_objs()):
-        print('Invalid annotation, sim %d\n'%(file_idx))
+        #print('Invalid annotation, sim %d\n'%(file_idx))
         invalid +=1
         continue
     exe = Executor(sim)
@@ -101,12 +101,16 @@ for ann_idx in pbar:
                     if ans == pred:
                         correct += 1
                     else:
-                        print('%d %d\n'%(file_idx, valid_q_idx))
-                        print(question)
-                        print(c[0])
-                        pred = exe.run(full_pg, debug=True)
-                        pdb.set_trace()
                         correct_question = False
+                        debug_flag=False
+                        if debug_flag:
+                            pred = exe.run(full_pg, debug=True)
+                            print('%d %d\n'%(file_idx, valid_q_idx))
+                            print(question)
+                            print(c[0])
+                            print('pred: %s\n'%(pred))
+                            print('ans: %s\n'%(ans))
+                            pdb.set_trace()
                     total += 1
                     
                     if q['question_type'].startswith('predictive'):

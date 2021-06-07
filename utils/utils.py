@@ -105,6 +105,8 @@ def load_mc_ann(sim_id, args):
                         "frame": frm, 
                         "x": x_c * IMG_W, 
                         "y": y_c * IMG_H,
+                        "w": w * IMG_W,
+                        "h": h * IMG_H,
                         "id": obj_id}
                 objs_list.append(obj_info)
             frm_info["objects"] = objs_list
@@ -120,5 +122,12 @@ def load_ann(sim_id, args):
     elif args.gt_flag and args.mc_flag:
         return load_mc_ann(sim_id, args)
 
+def print_monitor(monitor):
+    for key_id, acc_num in monitor.items():
+        if key_id.endswith('total'):
+            continue
+        q_type = key_id.rsplit('_', 1)[0]
+        acc = acc_num /( 1.0 * monitor[q_type +'_total'] )
+        print('%s: acc: %f\n'%(q_type, acc))
 if __name__=='__main__':
     pdb.set_trace()

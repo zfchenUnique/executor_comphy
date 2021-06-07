@@ -4,13 +4,15 @@ import numpy as np
 from utils import utils
 import pdb
 
-MOVING_V_TH = 0.1  # threshold above which an object is moving
+MOVING_V_TH = 0.25  # threshold above which an object is moving
 DIR_ANGLE_TH = 20  # threshold for allowed angle deviation wrt each directions
 FRAME_DIFF = 5
 
 DV_TH = 0.03
 #DIST_TH = 20
-DIST_TH = 40
+DIST_TH = 70
+#DIST_TH = 60
+#print(DIST_TH)
 
 
 class Simulation():
@@ -84,61 +86,128 @@ class Simulation():
             raise ValueError('Invalid object index')
         else:
             for i, t in enumerate(self.preds[0]['trajectory']):
+                if t['frame_index'] >= self.n_vis_frames:
+                    break
                 if self.is_visible(obj_idx, ann_idx=i) and \
                    self.is_moving(obj_idx, ann_idx=i):
+                    #pdb.set_trace()
                     return True
             return False
 
-    def is_moving_left(self, obj_idx, frame_idx=None, ann_idx=None,
-                       angle_half_range=DIR_ANGLE_TH):
-        frame_ann = self._get_frame_ann(frame_idx, ann_idx)
-        for o in frame_ann['objects']:
-            oid = self._get_obj_idx(o)
-            if oid == obj_idx:
-                theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
-                if o['vx'] < 0:
-                    theta += 180
-                return theta > 270 - angle_half_range or \
-                       theta < -90 + angle_half_range
-        raise ValueError('Invalid object index')
-
-    def is_moving_right(self, obj_idx, frame_idx=None, ann_idx=None,
-                       angle_half_range=DIR_ANGLE_TH):
-        frame_ann = self._get_frame_ann(frame_idx, ann_idx)
-        for o in frame_ann['objects']:
-            oid = self._get_obj_idx(o)
-            if oid == obj_idx:
-                theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
-                if o['vx'] < 0:
-                    theta += 180
-                return theta > 90 - angle_half_range and \
-                       theta < 90 + angle_half_range
-        raise ValueError('Invalid object index')
-
     def is_moving_up(self, obj_idx, frame_idx=None, ann_idx=None,
                        angle_half_range=DIR_ANGLE_TH):
-        frame_ann = self._get_frame_ann(frame_idx, ann_idx)
-        for o in frame_ann['objects']:
-            oid = self._get_obj_idx(o)
-            if oid == obj_idx:
-                theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
-                if o['vx'] < 0:
-                    theta += 180
-                return theta > 180 - angle_half_range and \
-                       theta < 180 + angle_half_range
+        if frame_idx is not None:
+            frame_ann = self._get_frame_ann(frame_idx, ann_idx)
+            for o in frame_ann['objects']:
+                oid = self._get_obj_idx(o)
+                if oid == obj_idx:
+                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    if o['vx'] < 0:
+                        theta += 180
+                    return theta > 270 - angle_half_range or \
+                           theta < -90 + angle_half_range
+        else: 
+            valid_frm_list = []
+            for f in range(0, self.n_vis_frames, FRAME_DIFF):
+                if self.is_visible(obj_idx, f)  and  \
+                        self.is_moving(obj_idx, f) and \
+                   not self.is_moving_up(
+                       obj_idx, f, angle_half_range=angle_half_range):
+                    valid_frm_list.append(0)
+                else:
+                    valid_frm_list.append(1)
+            ratio = sum(valid_frm_list) / (len(valid_frm_list)+0.000001)
+            if ratio >=0.5:
+                return True
+            else:
+                return False
         raise ValueError('Invalid object index')
 
     def is_moving_down(self, obj_idx, frame_idx=None, ann_idx=None,
                        angle_half_range=DIR_ANGLE_TH):
-        frame_ann = self._get_frame_ann(frame_idx, ann_idx)
-        for o in frame_ann['objects']:
-            oid = self._get_obj_idx(o)
-            if oid == obj_idx:
-                theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
-                if o['vx'] < 0:
-                    theta += 180
-                return theta < 0 + angle_half_range and \
-                       theta > 0 - angle_half_range
+        if frame_idx is not None:
+            frame_ann = self._get_frame_ann(frame_idx, ann_idx)
+            for o in frame_ann['objects']:
+                oid = self._get_obj_idx(o)
+                if oid == obj_idx:
+                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    if o['vx'] < 0:
+                        theta += 180
+                    return theta > 90 - angle_half_range and \
+                           theta < 90 + angle_half_range
+        else: 
+            valid_frm_list = []
+            for f in range(0, self.n_vis_frames, FRAME_DIFF):
+                if self.is_visible(obj_idx, f)  and  \
+                        self.is_moving(obj_idx, f) and \
+                   not self.is_moving_down(
+                       obj_idx, f, angle_half_range=angle_half_range):
+                    valid_frm_list.append(0)
+                else:
+                    valid_frm_list.append(1)
+            ratio = sum(valid_frm_list) / (len(valid_frm_list)+0.000001)
+            if ratio >=0.5:
+                return True
+            else:
+                return False
+        raise ValueError('Invalid object index')
+
+    def is_moving_left(self, obj_idx, frame_idx=None, ann_idx=None,
+                       angle_half_range=DIR_ANGLE_TH):
+        if frame_idx is not None:
+            frame_ann = self._get_frame_ann(frame_idx, ann_idx)
+            for o in frame_ann['objects']:
+                oid = self._get_obj_idx(o)
+                if oid == obj_idx:
+                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    if o['vx'] < 0:
+                        theta += 180
+                    return theta > 180 - angle_half_range and \
+                           theta < 180 + angle_half_range
+        else: 
+            valid_frm_list = []
+            for f in range(0, self.n_vis_frames, FRAME_DIFF):
+                if self.is_visible(obj_idx, f)  and  \
+                        self.is_moving(obj_idx, f) and \
+                   not self.is_moving_left(
+                       obj_idx, f, angle_half_range=angle_half_range):
+                    valid_frm_list.append(0)
+                else:
+                    valid_frm_list.append(1)
+            ratio = sum(valid_frm_list) / (len(valid_frm_list)+0.000001)
+            if ratio >=0.5:
+                return True
+            else:
+                return False
+        raise ValueError('Invalid object index')
+
+    def is_moving_right(self, obj_idx, frame_idx=None, ann_idx=None,
+                       angle_half_range=DIR_ANGLE_TH):
+        if frame_idx is not None:
+            frame_ann = self._get_frame_ann(frame_idx, ann_idx)
+            for o in frame_ann['objects']:
+                oid = self._get_obj_idx(o)
+                if oid == obj_idx:
+                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    if o['vx'] < 0:
+                        theta += 180
+                    return theta < 0 + angle_half_range and \
+                           theta > 0 - angle_half_range
+        else: 
+            valid_frm_list = []
+            for f in range(0, self.n_vis_frames, FRAME_DIFF):
+                if self.is_visible(obj_idx, f)  and  \
+                        self.is_moving(obj_idx, f) and \
+                   not self.is_moving_right(
+                       obj_idx, f, angle_half_range=angle_half_range):
+                    valid_frm_list.append(0)
+                else:
+                    valid_frm_list.append(1)
+            ratio = sum(valid_frm_list) / (len(valid_frm_list)+0.000001)
+            if ratio >=0.5:
+                return True
+            else:
+                return False
         raise ValueError('Invalid object index')
 
     def _init_sim_no_event(self):
@@ -170,7 +239,6 @@ class Simulation():
                         o['vy'] = np.average(vys)
                     else:
                         o['vx'], o['vy'] = 0, 0
-
             if p['what_if'] == -1:
                 self.collisions = self._get_col_proposals()
             else:
@@ -321,7 +389,8 @@ class Simulation():
             col_frames = self._get_col_frame_proposals(io, what_if)
             for f in col_frames:
                 partner, dist = self._get_closest_obj(io, f, what_if)
-                #print('frame: %d, object indexes: %d %d, dist: %f\n'%(f, io, partner, dist))
+                #if what_if==-1:
+                #    print('frame: %d, object indexes: %d %d, dist: %f\n'%(f, io, partner, dist))
                 if dist < DIST_TH and {io, partner} not in col_pairs:
                     col_event = {
                         'type': 'collision',

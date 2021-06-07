@@ -12,6 +12,7 @@ MATERIALS = ['metal', 'rubber']
 SHAPES = ['sphere', 'cylinder', 'cube']
 MASS = [1, 5]
 CHARGES = [-1, 0, 1]
+DIR_ANGLE_TH = 42  # threshold for allowed angle deviation wrt each directions
 
 class Executor():
     """Symbolic program executor for V-CLEVR questions"""
@@ -27,6 +28,7 @@ class Executor():
             #    import pdb
            #     pdb.set_trace()
             if m in ['<END>', '<NULL>']:
+            #if m in ['<END>']:
                 break
             if m not in ['<START>']:
                 if m not in self.modules:
@@ -177,6 +179,7 @@ class Executor():
             'equal_charge': {'func': self.equal_charge, 'nargs': 2},
             'filter_uncharged': {'func': self.filter_uncharged, 'nargs': 1},
             'filter_opposite': {'func': self.filter_opposite, 'nargs': 1},
+            'filter_same': {'func': self.filter_charged, 'nargs': 1},
             'query_both_shape': {'func': self.query_both_shape, 'nargs': 1},
             'query_both_material': {'func': self.query_both_material, 'nargs': 1},
             'query_both_color': {'func': self.query_both_color, 'nargs': 1},
@@ -213,10 +216,13 @@ class Executor():
         """
         if type(input_list) is not list:
             return 'error'
-        if len(input_list) != 1:
+        if len(input_list) < 1:
             return 'error'
-        else:
+        if len(input_list) == 1:
             return input_list[0]
+        # for query both
+        if len(input_list) ==2:
+            return input_list
 
     def count(self, input_list):
         """
@@ -584,15 +590,19 @@ class Executor():
         - args: obj(int), frame(int)
         - return: direction(str)
         """
-        if type(obj) is not int or type(frame) is not int:
+        if frame=='null':
+            frame = None
+        if type(obj) is not int or (type(frame) is not int and frame is not  None):
             return 'error'
-        if self.sim.is_moving_left(obj, frame, angle_half_range=40):
+        if not self.sim.is_visible(obj, frame):
+            return 'error'
+        if self.sim.is_moving_left(obj, frame, angle_half_range=DIR_ANGLE_TH):
             return 'left'
-        if self.sim.is_moving_right(obj, frame, angle_half_range=40):
+        if self.sim.is_moving_right(obj, frame, angle_half_range=DIR_ANGLE_TH):
             return 'right'
-        if self.sim.is_moving_up(obj, frame, angle_half_range=40):
+        if self.sim.is_moving_up(obj, frame, angle_half_range=DIR_ANGLE_TH):
             return 'up'
-        if self.sim.is_moving_down(obj, frame, angle_half_range=40):
+        if self.sim.is_moving_down(obj, frame, angle_half_range=DIR_ANGLE_TH):
             return 'down'
         return 'error'
 
@@ -770,10 +780,19 @@ class Executor():
         return output_masses
 
     def is_heavier(self, mass1, mass2):
-        if mass1 > mass2:
-            return 'yes'
+        #pdb.set_trace()
+        if isinstance(mass1, list)  and len(mass1)==2:
+            if mass1[0]> mass1[1]:
+                return 'yes'
+            else:
+                return 'no'
+        elif isinstance(mass1, int) and isinstance(mass2, int):
+            if mass1 > mass2:
+                return 'yes'
+            else:
+                return 'no'
         else:
-            return 'no'
+            return 'error'
 
     def equal_charge(self, obj1, obj2):
         charge1 = self.sim.objs[obj1]['charge']
@@ -809,6 +828,22 @@ class Executor():
         if len(charge_objs)!=2:
             return 'error'
         elif self.sim.objs[charge_objs[0]]['charge'] * self.sim.objs[charge_objs[1]]['charge'] <0:
+            return  charge_objs
+        else:
+            return 'error'
+
+    def filter_same(self, objs):
+        """
+        Filter the same charged objects in the input list
+        - args: objects(list)
+        - return: objects(list)
+        """
+        if type(objs) is not list:
+            return 'error'
+        charge_objs = self.filter_charged(objs)
+        if len(charge_objs)!=2:
+            return 'error'
+        elif self.sim.objs[charge_objs[0]]['charge'] * self.sim.objs[charge_objs[1]]['charge'] >0:
             return  charge_objs
         else:
             return 'error'
@@ -871,6 +906,8 @@ class Executor():
         return shape1 + ' and ' + shape2 
     
     def is_lighter(self, mass1, mass2):
+        if not isinstance(mass1, (int, float)) or (not isinstance(mass2, (int, float))):
+            return 'error'
         if mass1 < mass2:
             return 'yes'
         else:
