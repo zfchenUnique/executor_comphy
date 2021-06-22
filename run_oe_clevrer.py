@@ -10,6 +10,7 @@ from executor import Executor
 from simulation import Simulation
 import pdb
 from utils.utils import print_monitor
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--use_event_ann', default=1, type=int)
@@ -22,6 +23,9 @@ parser.add_argument('--track_dir', default='/home/zfchen/code/output/render_outp
 parser.add_argument('--frame_diff', default=5, type=int)
 parser.add_argument('--mc_flag', default=0, type=int)
 parser.add_argument('--raw_motion_prediction_dir', default='')
+parser.add_argument('--invalid_video_fn', default = 'invalid_video_v14.txt')
+parser.add_argument('--start_id', default=0, type=int)
+parser.add_argument('--num_sim', default=5000, type=int)
 args = parser.parse_args()
 
 question_path = args.question_path
@@ -34,25 +38,34 @@ with open(question_path) as f:
 
 total, correct = 0, 0
 
-pbar = tqdm(range(1000))
+pbar = tqdm(range(args.num_sim))
 
 acc_monitor = {}
 ans_swap = ''
 
+if os.path.isfile(args.invalid_video_fn):
+    print('Excluding invalid videos from %s\n'%(args.invalid_video_fn))
+    invalid_vid_mat = np.loadtxt(args.invalid_video_fn).astype(np.int)
+    invalid_list = invalid_vid_mat.tolist() 
+    print(invalid_list)
+else:
+    invalid_list = []
+
 for ann_idx in pbar:
-    file_idx = ann_idx  + 3000
+    file_idx = ann_idx  + args.start_id
     question_scene = anns[file_idx]
     sim = Simulation(args, file_idx, use_event_ann=(args.use_event_ann != 0))
-    if len(sim.objs)!=len(sim.get_visible_objs()):
-        #print('Invalid annotation, sim %d\n'%(file_idx))
+    if file_idx in invalid_list:
         continue
     exe = Executor(sim)
     for q_idx, q in enumerate(question_scene['questions']):
         question = q['question']
         parsed_pg = parsed_pgs[file_idx]['questions'][q_idx]['program']
-        #if 'filter_moving' not in parsed_pg and 'filter_stationary' not in parsed_pg:
-        #if 'query_shape' not in parsed_pg:
+        #if 'filter_before' not in parsed_pg:
         #    continue
+        #print('%d %d\n'%(file_idx, q_idx))
+        #print(question)
+        #print(parsed_pg)
         q_type = parsed_pg[-1]
         if q_type+'_acc' not in acc_monitor:
             acc_monitor[q_type+'_acc'] = 0
@@ -87,6 +100,6 @@ for ann_idx in pbar:
                 pass
         total += 1
 
-    #pbar.set_description('acc: {:f}%%'.format(float(correct)*100/total))
+    pbar.set_description('acc: {:f}%%'.format(float(correct)*100/total))
 print_monitor(acc_monitor)
 print('overall accuracy per question: %f %%' % (float(correct) * 100.0 / total))

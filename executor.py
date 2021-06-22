@@ -17,9 +17,10 @@ DIR_ANGLE_TH = 42  # threshold for allowed angle deviation wrt each directions
 class Executor():
     """Symbolic program executor for V-CLEVR questions"""
 
-    def __init__(self, sim):
+    def __init__(self, sim, args=None):
         self._set_sim(sim)
         self._register_modules()
+        self.args = args
 
     def run(self, pg, debug=False):
         exe_stack = []
@@ -50,6 +51,7 @@ class Executor():
                     if debug:
                         print('> %s%s' % (m, argv))
                         print(exe_stack)
+                        print('\n')
         return str(exe_stack[-1])
 
     def _set_sim(self, sim):
@@ -223,6 +225,8 @@ class Executor():
         # for query both
         if len(input_list) ==2:
             return input_list
+        if len(input_list) >=3:
+            return input_list[0]
 
     def count(self, input_list):
         """
@@ -866,9 +870,10 @@ class Executor():
         - args: obj_list (list)
         - return color1 and color2 (str)
         """
-        if type(obj_list) is not list and len(obj_list)!=2:
+        if type(obj_list) is not list or len(obj_list)<2:
             return 'error'
-        obj1, obj2 = obj_list
+
+        obj1, obj2 = obj_list[0], obj_list[1]
         if type(obj1) is not int or type(obj2) is not int:
             return 'error'
         color1 = self.query_color(obj1)
@@ -881,7 +886,7 @@ class Executor():
         - args: obj_list (list)
         - return material1 and material2 (str)
         """
-        if type(obj_list) is not list and len(obj_list)!=2:
+        if type(obj_list) is not list or len(obj_list)<2:
             return 'error'
         obj1, obj2 = obj_list
         if type(obj1) is not int or type(obj2) is not int:
@@ -896,9 +901,11 @@ class Executor():
         - args: obj_list (list)
         - return material1 and material2 (str)
         """
-        if type(obj_list) is not list and len(obj_list)!=2:
+        if type(obj_list) is not list or len(obj_list)<2:
             return 'error'
-        obj1, obj2 = obj_list
+        #if len(obj_list)!=2:
+        # Todo: select the most confident objects
+        obj1, obj2 = obj_list[0], obj_list[1]
         if type(obj1) is not int or type(obj2) is not int:
             return 'error'
         shape1 = self.query_shape(obj1)

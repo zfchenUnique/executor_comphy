@@ -13,17 +13,19 @@ DV_TH = 0.03
 DIST_TH = 70
 #DIST_TH = 60
 #print(DIST_TH)
-
+EPS = 0.000001
 
 class Simulation():
 
     def __init__(self, args, sim_id, n_vis_frames=128, use_event_ann=True):
         
-        objs, preds = utils.load_ann(sim_id, args)
+        objs, preds, edges = utils.load_ann(sim_id, args)
         self.objs = objs
         self.preds = preds
+        self.edges = edges # for proposal handling
         self.num_objs = len(self.objs)
-        
+       
+        self.args = args
         FRAME_DIFF = args.frame_diff
         self.frame_diff = FRAME_DIFF
         self.n_vis_frames = n_vis_frames
@@ -45,7 +47,10 @@ class Simulation():
 
     def get_visible_objs(self):
         #return [o['id'] for o in self.objs]
-        obj_list = [o['id'] for o in self.objs if self.is_visible(o['id'])]
+        if self.args.gt_flag:
+            obj_list = [o['id'] for o in self.objs if self.is_visible(o['id'])]
+        else:
+            obj_list = [o['id'] for o in self.objs]
         return obj_list
 
     def get_static_attrs(self, obj_idx):
@@ -101,7 +106,7 @@ class Simulation():
             for o in frame_ann['objects']:
                 oid = self._get_obj_idx(o)
                 if oid == obj_idx:
-                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    theta = np.arctan(o['vy'] / (o['vx']+EPS)) * 180 / np.pi
                     if o['vx'] < 0:
                         theta += 180
                     return theta > 270 - angle_half_range or \
@@ -130,7 +135,7 @@ class Simulation():
             for o in frame_ann['objects']:
                 oid = self._get_obj_idx(o)
                 if oid == obj_idx:
-                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    theta = np.arctan(o['vy'] / (o['vx']+EPS)) * 180 / np.pi
                     if o['vx'] < 0:
                         theta += 180
                     return theta > 90 - angle_half_range and \
@@ -159,7 +164,7 @@ class Simulation():
             for o in frame_ann['objects']:
                 oid = self._get_obj_idx(o)
                 if oid == obj_idx:
-                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    theta = np.arctan(o['vy'] / (o['vx'] + EPS)) * 180 / np.pi
                     if o['vx'] < 0:
                         theta += 180
                     return theta > 180 - angle_half_range and \
@@ -188,7 +193,7 @@ class Simulation():
             for o in frame_ann['objects']:
                 oid = self._get_obj_idx(o)
                 if oid == obj_idx:
-                    theta = np.arctan(o['vy'] / o['vx']) * 180 / np.pi
+                    theta = np.arctan(o['vy'] / (o['vx']+EPS)) * 180 / np.pi
                     if o['vx'] < 0:
                         theta += 180
                     return theta < 0 + angle_half_range and \

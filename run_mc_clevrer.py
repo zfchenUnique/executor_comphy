@@ -9,6 +9,7 @@ import argparse
 from executor import Executor
 from simulation import Simulation
 import pdb
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_progs', required=True)
@@ -22,6 +23,9 @@ parser.add_argument('--track_dir', default='/home/zfchen/code/output/render_outp
 parser.add_argument('--raw_motion_prediction_dir', default='')
 parser.add_argument('--frame_diff', default=5, type=int)
 parser.add_argument('--mc_flag', default=1, type=int)
+parser.add_argument('--invalid_video_fn', default = 'invalid_video_v14.txt')
+parser.add_argument('--start_id', default=0, type=int)
+parser.add_argument('--num_sim', default=5000, type=int)
 args = parser.parse_args()
 
 question_path = args.question_path
@@ -45,15 +49,20 @@ total_coun, correct_coun = 0, 0
 total_coun_per_q, correct_coun_per_q = 0, 0
 
 pred_map = {'yes': 'correct', 'no': 'wrong', 'error': 'error'}
-pbar = tqdm(range(1000))
-invalid = 0
+pbar = tqdm(range(args.num_sim))
+if os.path.isfile(args.invalid_video_fn):
+    print('Excluding invalid videos from %s\n'%(args.invalid_video_fn))
+    invalid_vid_mat = np.loadtxt(args.invalid_video_fn).astype(np.int)
+    invalid_list = invalid_vid_mat.tolist() 
+    print(invalid_list)
+else:
+    invalid_list = []
+
 for ann_idx in pbar:
-    file_idx = ann_idx + 3000 
+    file_idx = ann_idx + args.start_id 
     question_scene = anns[file_idx]
     sim = Simulation(args, file_idx, use_event_ann=(args.use_event_ann != 0))
-    if len(sim.objs)!=len(sim.get_visible_objs()):
-        #print('Invalid annotation, sim %d\n'%(file_idx))
-        invalid +=1
+    if file_idx in invalid_list:
         continue
     exe = Executor(sim)
     valid_q_idx = 0
@@ -157,7 +166,7 @@ print('predictive accuracy per option: %f %%' % (float(correct_pred) * 100.0 / t
 print('predictive accuracy per question: %f %%' % (float(correct_pred_per_q) * 100.0 / total_pred_per_q))
 print('counterfactual accuracy per option: %f %%' % (float(correct_coun) * 100.0 / total_coun))
 print('counterfactual accuracy per question: %f %%' % (float(correct_coun_per_q) * 100.0 / total_coun_per_q))
-print('Number of invalid videos %d\n'%(invalid))
+#print('Number of invalid videos %d\n'%(invalid))
 print('============ results ============')
 
 output_ann = {

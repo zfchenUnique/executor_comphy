@@ -3,6 +3,7 @@ import pdb
 import argparse
 import json
 import pycocotools.mask as coco_mask
+import numpy as np
 
 def get_obj_id_by_attr(obj_list, obj):
     for obj_info in obj_list:
@@ -58,7 +59,11 @@ def load_gt_ann(sim_id, args):
 def load_mc_ann(sim_id, args):
     IMG_H, IMG_W = 320, 480
     sim_str = 'sim_%05d'%sim_id
-    ann_path = os.path.join(args.ann_dir, sim_str, 'annotations', 'annotation.json')
+    if args.gt_flag:
+        ann_path = os.path.join(args.ann_dir, sim_str, 'annotations', 'annotation.json')
+    else:
+        ann_path = os.path.join(args.ann_dir, sim_str + '.json')
+        
     with open(ann_path, 'r') as fh:
         ann = json.load(fh)
     objs = []
@@ -113,14 +118,15 @@ def load_mc_ann(sim_id, args):
             track_list.append(frm_info)
         tmp_output["trajectory"] = track_list
         preds.append(tmp_output)
-    return objs, preds
+    if not args.gt_flag:
+        edges = np.array(ann['edges'])
+        assert len(objs)==edges.shape[0], 'Shape inconsistent'
+    else:
+        edges = None
+    return objs, preds, edges
 
 def load_ann(sim_id, args):
     return load_mc_ann(sim_id, args)
-    if args.gt_flag and (not args.mc_flag):
-        return load_gt_ann(sim_id, args)
-    elif args.gt_flag and args.mc_flag:
-        return load_mc_ann(sim_id, args)
 
 def print_monitor(monitor):
     for key_id, acc_num in monitor.items():
