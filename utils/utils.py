@@ -74,9 +74,15 @@ def load_mc_ann(sim_id, args):
         tmp_obj = {'color': obj_info['color'],
                 'material': obj_info['material'],
                 'shape': obj_info['shape'],
-                'mass': obj_info['mass'],
-                'charge': obj_info['charge'],
                 'id': obj_id}
+        if 'mass' in obj_info:        
+            tmp_obj['mass'] = obj_info['mass']
+        else:
+            tmp_obj['mass'] = 1
+        if 'charge' in obj_info:
+            tmp_obj['charge'] =  obj_info['charge']
+        else:
+            tmp_obj['charge'] =  0
         objs.append(tmp_obj)
     raw_pred_list = []
     for key_id in ['future', 'mass', 'charge']:
@@ -118,7 +124,7 @@ def load_mc_ann(sim_id, args):
             track_list.append(frm_info)
         tmp_output["trajectory"] = track_list
         preds.append(tmp_output)
-    if not args.gt_flag:
+    if not args.gt_flag and 'edegs' in ann:
         edges = np.array(ann['edges'])
         assert len(objs)==edges.shape[0], 'Shape inconsistent'
     else:
