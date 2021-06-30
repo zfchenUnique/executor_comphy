@@ -87,7 +87,7 @@ for ann_idx in pbar:
                     acc_monitor[q_type+'_acc'] +=1
         
         if pred!=ans and pred!=ans_swap:
-            debug_flag=False
+            debug_flag=True
             if debug_flag:
                 pred = exe.run(parsed_pg, debug=True)
                 print('%d %d\n'%(file_idx, q_idx))
