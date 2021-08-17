@@ -3,37 +3,39 @@ import json
 import numpy as np
 from utils import utils
 import pdb
+import json
 
 MOVING_V_TH = 0.25  # threshold above which an object is moving
 DIR_ANGLE_TH = 20  # threshold for allowed angle deviation wrt each directions
 FRAME_DIFF = 5
 
-DV_TH = 0.03
+DV_TH = 0
 #DIST_TH = 20
-DIST_TH = 70
+DIST_TH = 68
 #DIST_TH = 60
-#print(DIST_TH)
+print(DIST_TH)
+print(DV_TH)
 EPS = 0.000001
 
 class Simulation():
 
-    def __init__(self, args, sim_id, n_vis_frames=128, use_event_ann=True):
+    def __init__(self, args, sim_id, n_vis_frames=125, use_event_ann=True):
         
         objs, preds, edges = utils.load_ann(sim_id, args)
         self.objs = objs
         self.preds = preds
         self.edges = edges # for proposal handling
         self.num_objs = len(self.objs)
+        self.sim_id = sim_id
        
         self.args = args
         FRAME_DIFF = args.frame_diff
         self.frame_diff = FRAME_DIFF
         self.n_vis_frames = n_vis_frames
         self.moving_v_th = MOVING_V_TH
+        self._init_sim_no_event()
         if use_event_ann:
-            self._init_sim()
-        else:
-            self._init_sim_no_event()
+            self._init_collision_gt()
 
     def get_what_if_id(self, pred):
         p = pred
@@ -95,7 +97,6 @@ class Simulation():
                     break
                 if self.is_visible(obj_idx, ann_idx=i) and \
                    self.is_moving(obj_idx, ann_idx=i):
-                    #pdb.set_trace()
                     return True
             return False
 
@@ -245,9 +246,25 @@ class Simulation():
                     else:
                         o['vx'], o['vy'] = 0, 0
             if p['what_if'] == -1:
+                #print('debug')
+                #self.collisions = self._get_col_proposals_counterfact()
                 self.collisions = self._get_col_proposals()
             else:
                 self.cf_events[what_if_id] = self._get_col_proposals(what_if_id)
+
+    def _init_collision_gt(self):
+        ann_path = os.path.join(self.args.gt_ann_dir, 'causal_sim', 'sim_%05d'%self.sim_id, 'annotations', 'annotation.json')
+        with open(ann_path, 'r') as fh:
+            ann = json.load(fh)
+        self.collisions = []
+        for c in ann['collisions']:
+            obj1_idx = c['object_idxs'][0]
+            obj2_idx = c['object_idxs'][1]
+            self.collisions.append({
+                    'type': 'collision',
+                    'object': [obj1_idx, obj2_idx],
+                    'frame': int(c['time'] * 25),
+                })
 
     def _init_sim(self):
         self.in_out = []
@@ -386,6 +403,43 @@ class Simulation():
                     closest_obj = io
         return closest_obj, min_dist
 
+    def _get_closest_obj_list(self, obj, frame_idx, what_if=-1):
+        assert self.is_visible(obj, frame_idx=frame_idx, what_if=what_if)
+        xo, yo = self._get_obj_location(obj, frame_idx=frame_idx, what_if=what_if)
+        obj_idxs = [o['id'] for o in self.objs]
+        min_dist = 99999
+        closest_obj = -1
+        closest_obj_list  = []
+        min_dist_list  = []
+        for io in obj_idxs:
+            if io != obj and self.is_visible(io, frame_idx=frame_idx, what_if=what_if):
+                x, y = self._get_obj_location(io, frame_idx=frame_idx, what_if=what_if)
+                dist = np.linalg.norm([x-xo, y-yo])
+                min_dist_list.append(dist)
+                closest_obj_list.append(io)
+        return closest_obj_list, min_dist_list
+
+    def _get_col_proposals_counterfact(self, what_if=-1):
+        cols = []
+        col_pairs = []
+        obj_idxs = [o['id'] for o in self.objs]
+        for io in obj_idxs:
+            col_frames = self._get_col_frame_proposals(io, what_if)
+            for f in col_frames:
+                partner_list, dist_list = self._get_closest_obj_list(io, f, what_if)
+                for partner, dist in zip(partner_list, dist_list):
+                    #if what_if==-1:
+                    #    print('frame: %d, object indexes: %d %d, dist: %f\n'%(f, io, partner, dist))
+                    if dist < DIST_TH and {io, partner} not in col_pairs:
+                        col_event = {
+                            'type': 'collision',
+                            'object': [io, partner],
+                            'frame': f,
+                        }
+                        cols.append(col_event)
+                        col_pairs.append({io, partner})
+        return cols
+
     def _get_col_proposals(self, what_if=-1):
         cols = []
         col_pairs = []
@@ -408,3 +462,6 @@ class Simulation():
     
     def is_charged(self, obj_idx):
         return self.objs[obj_idx]['charge']!=0
+    
+    def is_light(self, obj_idx):
+        return self.objs[obj_idx]['mass']==1

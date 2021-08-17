@@ -140,6 +140,6 @@ def print_monitor(monitor):
             continue
         q_type = key_id.rsplit('_', 1)[0]
         acc = acc_num /( 1.0 * monitor[q_type +'_total'] )
-        print('%s: acc: %f\n'%(q_type, acc))
+        print('%s: acc: %f, %d/%d\n'%(q_type, acc, acc_num, monitor[q_type+'_total']))
 if __name__=='__main__':
     pdb.set_trace()

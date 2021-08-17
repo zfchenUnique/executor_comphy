@@ -1,0 +1,11 @@
+python run_mc_clevrer.py \
+    --gt_flag 1 \
+    --use_event_ann 0 \
+    --n_progs 5000 \
+    --ann_dir /home/zfchen/code/output/render_output_vislab3/v16/render/causal_sim \
+    --program_path /home/zfchen/code/clevrer_dataset_generation_v2/clevrer_question_generation/output/questions_v16/multiple_choice_questions.json \
+    --question_path /home/zfchen/code/clevrer_dataset_generation_v2/clevrer_question_generation/output/questions_v16/multiple_choice_questions.json \
+    --raw_motion_prediction_dir /home/zfchen/code/output/render_output_vislab3/v16/predictions_gt_v2 \
+    --invalid_video_fn /home/zfchen/code/clevrer_dataset_generation_v2/models/CLEVRER/executor_clevrer/data/invalid_video_v16.txt \
+    --num_sim 50 \
+    --start_id 4000 \

@@ -7,3 +7,6 @@ python run_mc_clevrer.py \
     --question_path /home/zfchen/code/clevrer_dataset_generation_v2/clevrer_question_generation/output/questions_v14_1/multiple_choice_questions.json \
     --raw_motion_prediction_dir /home/zfchen/code/output/render_output_disk2/prediction_v14_prp_v15_2 \
     --ann_dir /home/zfchen/code/output/ns-vqa_output/v14_prp_pred_v5/config \
+    --start_id 3000 \
+    --num_sim 1000 \
+    --invalid_video_fn data/invalid_video_v14.txt

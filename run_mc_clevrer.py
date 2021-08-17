@@ -10,6 +10,7 @@ from executor import Executor
 from simulation import Simulation
 import pdb
 import numpy as np
+EPS = 0.000001
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_progs', required=True)
@@ -26,6 +27,7 @@ parser.add_argument('--mc_flag', default=1, type=int)
 parser.add_argument('--invalid_video_fn', default = 'invalid_video_v14.txt')
 parser.add_argument('--start_id', default=0, type=int)
 parser.add_argument('--num_sim', default=5000, type=int)
+parser.add_argument('--file_idx_offset', default=10000, type=int)
 args = parser.parse_args()
 
 question_path = args.question_path
@@ -48,6 +50,11 @@ total_pred_per_q, correct_pred_per_q = 0, 0
 total_coun, correct_coun = 0, 0
 total_coun_per_q, correct_coun_per_q = 0, 0
 
+total_coun_mass, correct_coun_mass = 0, 0
+total_coun_per_q_mass, correct_coun_per_q_mass = 0, 0
+total_coun_charge, correct_coun_charge = 0, 0
+total_coun_per_q_charge, correct_coun_per_q_charge = 0, 0
+
 pred_map = {'yes': 'correct', 'no': 'wrong', 'error': 'error'}
 pbar = tqdm(range(args.num_sim))
 if os.path.isfile(args.invalid_video_fn):
@@ -57,11 +64,16 @@ if os.path.isfile(args.invalid_video_fn):
     print(invalid_list)
 else:
     invalid_list = []
+    #fh = open(args.invalid_video_fn, 'w')
 
 for ann_idx in pbar:
     file_idx = ann_idx + args.start_id 
-    question_scene = anns[file_idx]
-    sim = Simulation(args, file_idx, use_event_ann=(args.use_event_ann != 0))
+    question_scene = anns[file_idx-args.file_idx_offset]
+    
+    sim = Simulation(args, file_idx, n_vis_frames=120, use_event_ann=(args.use_event_ann != 0))
+    #if len(sim.objs)!=len(sim.get_visible_objs()):
+    #    fh.write('%d\n'%(file_idx))
+    #    print(file_idx)
     if file_idx in invalid_list:
         continue
     exe = Executor(sim)
@@ -71,9 +83,15 @@ for ann_idx in pbar:
         q_type = q['question_type']
         if q_type == 'descriptive': # skip open-ended questions
             continue
+        if 'counterfact_lighter' in q['program'] or 'counterfact_heavier' in q['program']:
+            counter_mass = True
+        else:
+            counter_mass = False
+        #if not q['question_type'].startswith('predictive'):
+        #    continue
         #print('%d %d\n'%(file_idx, valid_q_idx))
         #print(question)
-        q_ann = parsed_pgs[file_idx]['questions'][q_idx]
+        q_ann = parsed_pgs[file_idx-args.file_idx_offset]['questions'][q_idx]
         correct_question = True
         if 'choices' in q_ann:
             for c in q_ann['choices']:
@@ -111,7 +129,8 @@ for ann_idx in pbar:
                         correct += 1
                     else:
                         correct_question = False
-                        debug_flag=False
+                        debug_flag = False
+                        #debug_flag = True
                         if debug_flag:
                             pred = exe.run(full_pg, debug=True)
                             print('%d %d\n'%(file_idx, valid_q_idx))
@@ -133,6 +152,17 @@ for ann_idx in pbar:
                             correct_coun += 1
                         total_coun += 1
 
+                    if q['question_type'].startswith('counterfactual') and counter_mass:
+                        if ans == pred:
+                            correct_coun_mass += 1
+                        total_coun_mass += 1
+                    
+                    if q['question_type'].startswith('counterfactual') and not counter_mass:
+                        if ans == pred:
+                            correct_coun_charge += 1
+                        total_coun_charge += 1
+
+
         if correct_question:
             correct_per_q += 1
         total_per_q += 1
@@ -151,21 +181,36 @@ for ann_idx in pbar:
             if correct_question:
                 correct_coun_per_q += 1
             total_coun_per_q += 1
+        
+        if q['question_type'].startswith('counterfactual') and counter_mass:
+            if correct_question:
+                correct_coun_per_q_mass += 1
+            total_coun_per_q_mass += 1
+        
+        if q['question_type'].startswith('counterfactual') and not counter_mass:
+            if correct_question:
+                correct_coun_per_q_charge += 1
+            total_coun_per_q_charge += 1
+
         valid_q_idx += 1
     # print('up to scene %d: %d / %d correct options, accuracy %f %%'
     #       % (ann_idx, correct, total, (float(correct)*100/total)))
     # print('up to scene %d: %d / %d correct questions, accuracy %f %%'
     #       % (ann_idx, correct_per_q, total_per_q, (float(correct_per_q)*100/total_per_q)))
     # print()
-    pbar.set_description('per choice {:f}, per questions {:f}'.format(float(correct)*100/total, float(correct_per_q)*100/total_per_q))
+    pbar.set_description('per choice {:f}, per questions {:f}'.format(float(correct)*100/max(total, EPS), float(correct_per_q)*100/max(total_per_q, EPS)))
 
 print('============ results ============')
 print('overall accuracy per option: %f %%' % (float(correct) * 100.0 / total))
 print('overall accuracy per question: %f %%' % (float(correct_per_q) * 100.0 / total_per_q))
-print('predictive accuracy per option: %f %%' % (float(correct_pred) * 100.0 / total_pred))
-print('predictive accuracy per question: %f %%' % (float(correct_pred_per_q) * 100.0 / total_pred_per_q))
-print('counterfactual accuracy per option: %f %%' % (float(correct_coun) * 100.0 / total_coun))
-print('counterfactual accuracy per question: %f %%' % (float(correct_coun_per_q) * 100.0 / total_coun_per_q))
+print('predictive accuracy per option: %f %%' % (float(correct_pred) * 100.0 / max( total_pred, EPS)))
+print('predictive accuracy per question: %f %%' % (float(correct_pred_per_q) * 100.0 / max(total_pred_per_q, EPS)))
+print('counterfactual accuracy per option: %f %%' % (float(correct_coun) * 100.0 / max(total_coun, EPS)))
+print('counterfactual accuracy per question: %f %%' % (float(correct_coun_per_q) * 100.0 / max(total_coun_per_q, EPS)))
+print('counterfactual_mass accuracy per option: %f %%' % (float(correct_coun_mass) * 100.0 / max(total_coun_mass, EPS)))
+print('counterfactual_mass accuracy per question: %f %%' % (float(correct_coun_per_q_mass) * 100.0 / max(total_coun_per_q_mass, EPS)))
+print('counterfactual_charge accuracy per option: %f %%' % (float(correct_coun_charge) * 100.0 / max(total_coun_charge, EPS)  ))
+print('counterfactual_charge accuracy per question: %f %%' % (float(correct_coun_per_q_charge) * 100.0 / max(total_coun_per_q_charge, EPS)))
 #print('Number of invalid videos %d\n'%(invalid))
 print('============ results ============')
 
@@ -186,6 +231,10 @@ output_ann = {
     'correct_counterfactual_options': correct_coun,
     'total_counterfactual_questions': total_coun_per_q,
     'correct_counterfactual_questions': correct_coun_per_q,
+    'total_counterfactual_mass_options': total_coun_mass,
+    'correct_counterfactual_mass_options': correct_coun_mass,
+    'total_counterfactual_charge_questions': total_coun_per_q_charge,
+    'correct_counterfactual_charge_questions': correct_coun_per_q_charge,
 }
 
 output_file = 'result_mc.json'

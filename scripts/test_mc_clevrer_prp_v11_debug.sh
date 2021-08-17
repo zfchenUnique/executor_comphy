@@ -5,6 +5,6 @@ python run_mc_clevrer.py \
     --ann_dir /home/zfchen/code/output/render_output/causal_sim_v11_4 \
     --program_path /home/zfchen/code/clevrer_dataset_generation_v2/clevrer_question_generation/output/questions_v11/multiple_choice_questions.json \
     --question_path /home/zfchen/code/clevrer_dataset_generation_v2/clevrer_question_generation/output/questions_v11/multiple_choice_questions.json \
-    --raw_motion_prediction_dir /home/zfchen/code/output/render_output_disk2/prediction_v11_v3 \
-    --ann_dir /home/zfchen/code/output/ns-vqa_output/v11_prp_pred/config \
+    --raw_motion_prediction_dir /home/zfchen/code/output/render_output_disk2/prediction_v11_prp_debug \
+    --ann_dir /home/zfchen/code/output/ns-vqa_output/v11_prp_pred_v2_debug/config \
     --invalid_video_fn 'data/invalid_video_v11.txt' \

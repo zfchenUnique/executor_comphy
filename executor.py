@@ -187,9 +187,13 @@ class Executor():
             'query_both_color': {'func': self.query_both_color, 'nargs': 1},
             'is_lighter': {'func': self.is_lighter, 'nargs': 2},
             'not': {'func': self.negate, 'nargs': 1},
+            'filter_light': {'func': self.filter_light, 'nargs': 1},
+            'filter_heavy': {'func': self.filter_heavy, 'nargs': 1},
         }
 
     # Module definitions
+
+
 
     ## Set / entry operators
     def objects(self):
@@ -919,3 +923,31 @@ class Executor():
             return 'yes'
         else:
             return 'no'
+    
+    def filter_light(self, objs):
+        """
+        Filter all light objects in the input list
+        - args: objects(list)
+        - return: objects(list)
+        """
+        if type(objs) is not list:
+            return 'error'
+        output_objs = []
+        for o in objs:
+            if self.sim.is_visible(o) and self.sim.is_light(o):
+                output_objs.append(o)
+        return output_objs
+
+    def filter_heavy(self, objs):
+        """
+        Filter all heavy objects in the input list
+        - args: objects(list)
+        - return: objects(list)
+        """
+        if type(objs) is not list:
+            return 'error'
+        output_objs = []
+        for o in objs:
+            if self.sim.is_visible(o) and (not self.sim.is_light(o)):
+                output_objs.append(o)
+        return output_objs
