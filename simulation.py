@@ -9,7 +9,7 @@ MOVING_V_TH = 0.25  # threshold above which an object is moving
 DIR_ANGLE_TH = 20  # threshold for allowed angle deviation wrt each directions
 FRAME_DIFF = 5
 
-DV_TH = 0
+DV_TH = 0.003
 #DIST_TH = 20
 DIST_TH = 68
 #DIST_TH = 60
