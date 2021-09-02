@@ -28,6 +28,7 @@ parser.add_argument('--invalid_video_fn', default = 'invalid_video_v14.txt')
 parser.add_argument('--start_id', default=0, type=int)
 parser.add_argument('--num_sim', default=5000, type=int)
 parser.add_argument('--file_idx_offset', default=10000, type=int)
+parser.add_argument('--result_out_fn', default = 'result_split1.json')
 args = parser.parse_args()
 
 question_path = args.question_path
@@ -62,23 +63,32 @@ if os.path.isfile(args.invalid_video_fn):
     invalid_vid_mat = np.loadtxt(args.invalid_video_fn).astype(np.int)
     invalid_list = invalid_vid_mat.tolist() 
     print(invalid_list)
+    if len(invalid_list)==0:
+        fh = open(args.invalid_video_fn, 'w')
 else:
     invalid_list = []
-    #fh = open(args.invalid_video_fn, 'w')
+    fh = open(args.invalid_video_fn, 'w')
+result_list = []
 
 for ann_idx in pbar:
     file_idx = ann_idx + args.start_id 
     question_scene = anns[file_idx-args.file_idx_offset]
     
     sim = Simulation(args, file_idx, n_vis_frames=120, use_event_ann=(args.use_event_ann != 0))
-    #if len(sim.objs)!=len(sim.get_visible_objs()):
-    #    fh.write('%d\n'%(file_idx))
-    #    print(file_idx)
+    tmp_ans_list = []
     if file_idx in invalid_list:
+        result_list.append(tmp_ans_list)
         continue
+    if len(sim.objs)!=len(sim.get_visible_objs()):
+        fh.write('%d\n'%(file_idx))
+        print('invalid %d\n'%file_idx)
+        continue
+    #print('\n%d\n'%file_idx)
     exe = Executor(sim)
     valid_q_idx = 0
+    #pdb.set_trace()
     for q_idx, q in enumerate(question_scene['questions']):
+        #print('%d\n'%q_idx)
         question = q['question']
         q_type = q['question_type']
         if q_type == 'descriptive': # skip open-ended questions
@@ -87,10 +97,6 @@ for ann_idx in pbar:
             counter_mass = True
         else:
             counter_mass = False
-        #if not q['question_type'].startswith('predictive'):
-        #    continue
-        #print('%d %d\n'%(file_idx, valid_q_idx))
-        #print(question)
         q_ann = parsed_pgs[file_idx-args.file_idx_offset]['questions'][q_idx]
         correct_question = True
         if 'choices' in q_ann:
@@ -165,6 +171,9 @@ for ann_idx in pbar:
 
         if correct_question:
             correct_per_q += 1
+            tmp_ans_list.append(1)
+        else:
+            tmp_ans_list.append(0)
         total_per_q += 1
 
         if q['question_type'].startswith('explanatory'):
@@ -198,6 +207,7 @@ for ann_idx in pbar:
     # print('up to scene %d: %d / %d correct questions, accuracy %f %%'
     #       % (ann_idx, correct_per_q, total_per_q, (float(correct_per_q)*100/total_per_q)))
     # print()
+    result_list.append(tmp_ans_list)
     pbar.set_description('per choice {:f}, per questions {:f}'.format(float(correct)*100/max(total, EPS), float(correct_per_q)*100/max(total_per_q, EPS)))
 
 print('============ results ============')
@@ -235,9 +245,10 @@ output_ann = {
     'correct_counterfactual_mass_options': correct_coun_mass,
     'total_counterfactual_charge_questions': total_coun_per_q_charge,
     'correct_counterfactual_charge_questions': correct_coun_per_q_charge,
+    'result_list': result_list
 }
 
-output_file = 'result_mc.json'
+output_file = args.result_out_fn
 if args.use_in != 0:
     output_file = 'result_mc_in.json'
 with open(output_file, 'w') as fout:
