@@ -30,7 +30,13 @@ pip install -r requirements
 - Download the regional proposals with attribute and physical property prediction from [Google drive](https://drive.google.com/file/d/1eaV0yaqKbSnPg_7g0Q9eJ2TZTOJaKyyn/view?usp=sharing)
 - Download the dynamic predictions from [Google drive](https://drive.google.com/file/d/1QD1o-8UArrGWvA-AQ--xNZzplBzXLKgY/view?usp=sharing)
 - Run executor for factual questions.
+```
+sh scripts/test_oe_release.sh
+```
 - Run executor for multiple-choice questions.
+```
+sh scripts/test_mc_release.sh
+```
 ## Supporting sub-modules
 ### Perception
 This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s perception module object detection and visual attribute extraction.
