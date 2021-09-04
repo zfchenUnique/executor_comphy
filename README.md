@@ -42,3 +42,4 @@ sh scripts/test_mc_release.sh
 This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s perception module object detection and visual attribute extraction.
 ### Physical Property Learner and Dynamic predictor
 ### Program parser 
+This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s program parser module to tranform language into executable programs.
