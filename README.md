@@ -39,9 +39,9 @@ sh scripts/test_oe_release.sh
 sh scripts/test_mc_release.sh
 ```
 ## Supporting sub-modules
-### Perception
-This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s perception module object detection and visual attribute extraction.
 ### Physical Property Learner and Dynamic predictor
 Please refer to [this repo](https://github.com/zfchenUnique/property_learner_predictor.git) for property learning and dynamics prediction.
+### Perception
+This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s perception module object detection and visual attribute extraction.
 ### Program parser 
 This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s program parser module to tranform language into executable programs.
