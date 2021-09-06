@@ -6,6 +6,7 @@ This repository holds the code for the paper.
 Zhenfang Chen, Kexin Yi, Yunzhu Li, Mingyu Ding, Antonio Torralba, Joshua B. Tenenbaum, Chuang Gan, (Under review)
 >
 [PDF](https://openreview.net/pdf?id=wgQoeAdyk11)
+
 [Project Website](https://comphyneurips.github.io/)
 
 ## Framework
@@ -41,5 +42,6 @@ sh scripts/test_mc_release.sh
 ### Perception
 This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s perception module object detection and visual attribute extraction.
 ### Physical Property Learner and Dynamic predictor
+Please refer to [this repo](https://github.com/zfchenUnique/property_learner_predictor.git) for property learning and dynamics prediction.
 ### Program parser 
 This module uses the [NS-VQA](https://github.com/kexinyi/ns-vqa.git)'s program parser module to tranform language into executable programs.
