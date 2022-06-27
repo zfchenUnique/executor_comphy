@@ -10,6 +10,6 @@ python run_oe_clevrer.py \
     --raw_motion_prediction_dir ${PRED_DIR} \
     --ann_dir ${ANN_DIR} \
     --start_id 10000 \
-    --num_sim 50 \
+    --num_sim 2000 \
     --ann_offset 10000 \
-    --save_prediction_fn test_oe.json \
+    --save_prediction_fn test_oe_v2.json \

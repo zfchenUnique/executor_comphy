@@ -98,7 +98,7 @@ for ann_idx in pbar:
                     total_coun += 1
                 pred_list.append(pred)
         ques_id = q['question_id']
-        tmp_pred[ques_id] = pred_list
+        tmp_pred[ques_id] = {'choices': pred_list, 'question_type': q['question_type'] }
 
         if correct_question:
             correct_per_q += 1
@@ -114,7 +114,7 @@ for ann_idx in pbar:
                 correct_coun_per_q += 1
             total_coun_per_q += 1
         valid_q_idx += 1
-    prediction_dict[file_idx] = tmp_pred
+    prediction_dict[file_idx] =  tmp_pred
     pbar.set_description('per choice {:f}, per questions {:f}'.format(float(correct)*100/max(total, EPS), float(correct_per_q)*100/max(total_per_q, EPS)))
 
 if ans is not None:
